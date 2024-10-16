@@ -12,7 +12,7 @@ add(Value, Tree) ->
     {_, V, L, R} = add_r(Value, Tree),
     {black, V, L, R}. % Recolor the root node
 
-
+% Add Recursive
 -spec add_r(integer(), tuple()) -> tuple().
 add_r(Value, nil) ->
     {red, Value, nil, nil};
@@ -34,6 +34,9 @@ contains(Value, {_, NodeValue, Left, _}) when Value < NodeValue ->
 contains(Value, {_, NodeValue, _, R}) when Value > NodeValue ->
     contains(Value, R).
 
+
+
+    
 -spec balance_left(tuple()) -> tuple().
 balance_left({black, V, {red, LV, LL, {red, LRV, LRL, LRR}}, {red, RV, RL, RR}}) -> % Push Redness
     {red, V, {black, LV, LL, {red, LRV, LRL, LRR}}, {black, RV, RL, RR}};
