@@ -27,8 +27,13 @@ contains(Trie, [H|T]) ->
 -spec add(map(), list()) -> map().
 add(Trie, []) -> 
     maps:put("End", #{}, Trie);
-add(Trie, [H | T]) when maps:is_key(H, Trie) -> 
-    add(maps:get(H, Trie), T).
+add(Trie, [H | T]) ->
+    case maps:is_key(H, Trie) of
+      true ->
+        add(maps:get(H, Trie), T);
+      false -> 
+        build_branch(Trie, T)
+    end.
 
 
 
@@ -43,3 +48,39 @@ build_branch(Trie, [H | T]) ->
 
 
 
+-ifdef(EUNIT).
+-include_lib("eunit/include/eunit.hrl").
+
+% Test cases for contains/2
+contains_test_() ->
+    Trie = maps:from_list([{"a", maps:from_list([{"b", maps:from_list([{"End", #{}}])}])}]),
+    [
+        ?_assertEqual(true, contains(Trie, ["a", "b"])), % Happy path: key exists.
+        ?_assertEqual(false, contains(Trie, ["a", "c"])), % Edge case: partial path exists but fails.
+        ?_assertEqual(false, contains(Trie, ["x"])), % Edge case: non-existing root key.
+        ?_assertEqual(false, contains(Trie, [])), % Edge case: empty list input for non-empty trie.
+        ?_assertEqual(true, contains(maps:from_list([{"End", #{}}]), [])) % Happy path: empty list input with only "End".
+    ].
+
+% Test cases for add/2
+add_test_() ->
+    Trie = #{"a" => #{"b" => #{"End" => #{}}}},
+    [
+        ?_assertEqual(#{"a" => #{"b" => #{"End" => #{}}}}, add(Trie, ["a", "b"])), % Adding existing path.
+        ?_assertEqual(#{"a" => #{"b" => #{"End" => #{}}}, "x" => #{"End" => #{}}}, add(Trie, ["x"])), % Adding new key.
+        ?_assertEqual(#{"a" => #{"b" => #{"c" => #{"End" => #{}}}, "End" => #{}}}, add(Trie, ["a", "b", "c"])), % Extending path.
+        ?_assertEqual(#{"End" => #{}}, add(#{}, [])), % Edge case: adding empty list to empty trie.
+        ?_assertEqual(#{"a" => #{"End" => #{}}}, add(#{}, ["a"])) % Adding a single key to empty trie.
+    ].
+
+% Test cases for build_branch/2
+build_branch_test_() ->
+    Trie = #{},
+    [
+        ?_assertEqual(#{"a" => #{"b" => #{"End" => #{}}}}, build_branch(Trie, ["a", "b"])), % Happy path: building nested branch.
+        ?_assertEqual(#{"End" => #{}}, build_branch(Trie, [])), % Edge case: building branch from empty list.
+        ?_assertEqual(#{"a" => #{"End" => #{}}}, build_branch(Trie, ["a"])), % Building branch with one element.
+        ?_assertEqual(#{"a" => #{"b" => #{"c" => #{"End" => #{}}}}}, build_branch(Trie, ["a", "b", "c"])) % Deep branch creation.
+    ].
+
+-endif.
