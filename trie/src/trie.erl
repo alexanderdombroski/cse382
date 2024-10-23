@@ -25,16 +25,20 @@ contains(Trie, [H|T]) ->
     end. 
 
 -spec add(map(), list()) -> map().
-add(Trie, [H | T]) -> ok.
+add(Trie, []) -> 
+    maps:put("End", #{}, Trie);
+add(Trie, [H | T]) when maps:is_key(H, Trie) -> 
+    add(maps:get(H, Trie), T).
+
+
 
 
 
 -spec build_branch(map(), list()) -> map().
 build_branch(Trie, []) ->
-    maps:put("End", #{}, Trie);
+    maps:put("End", #{}, Trie); 
 build_branch(Trie, [H | T]) -> 
-    
-    build_branch(maps:get(H, Trie), T).
+    maps:put(H, build_branch(maps:get(H, Trie), T), Trie). 
 
 
 
