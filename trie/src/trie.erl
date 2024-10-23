@@ -32,7 +32,7 @@ add(Trie, [H | T]) ->
       true ->
         maps:put(H, add(maps:get(H, Trie), T), Trie);
       false -> 
-        build_branch(Trie, T)
+        maps:put(H, build_branch(Trie, T), Trie)
     end.
 
 
