@@ -30,7 +30,7 @@ add(Trie, []) ->
 add(Trie, [H | T]) ->
     case maps:is_key(H, Trie) of
       true ->
-        add(maps:get(H, Trie), T);
+        maps:put(H, add(maps:get(H, Trie), T), Trie);
       false -> 
         build_branch(Trie, T)
     end.
