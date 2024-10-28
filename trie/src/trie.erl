@@ -32,7 +32,7 @@ add(Trie, [H | T]) ->
       true ->
         maps:put(H, add(maps:get(H, Trie), T), Trie);
       false -> 
-        maps:put(H, build_branch(Trie, T), Trie)
+        maps:put(H, build_branch(#{}, T), Trie) % Sub branch needs to be empty
     end.
 
 
@@ -43,7 +43,7 @@ add(Trie, [H | T]) ->
 build_branch(Trie, []) ->
     maps:put("End", #{}, Trie); 
 build_branch(Trie, [H | T]) -> 
-    maps:put(H, build_branch(maps:get(H, Trie), T), Trie). 
+    maps:put(H, build_branch(maps:get(H, Trie, #{}), T), Trie). % Needed to add a default value of #{}
 
 
 
@@ -68,7 +68,7 @@ add_test_() ->
     [
         ?_assertEqual(#{"a" => #{"b" => #{"End" => #{}}}}, add(Trie, ["a", "b"])), % Adding existing path.
         ?_assertEqual(#{"a" => #{"b" => #{"End" => #{}}}, "x" => #{"End" => #{}}}, add(Trie, ["x"])), % Adding new key.
-        ?_assertEqual(#{"a" => #{"b" => #{"c" => #{"End" => #{}}}, "End" => #{}}}, add(Trie, ["a", "b", "c"])), % Extending path.
+        ?_assertEqual(#{"a" => #{"b" => #{"End" => #{}, "c" => #{"End" => #{}}}}}, add(Trie, ["a", "b", "c"])), % Extending path.
         ?_assertEqual(#{"End" => #{}}, add(#{}, [])), % Edge case: adding empty list to empty trie.
         ?_assertEqual(#{"a" => #{"End" => #{}}}, add(#{}, ["a"])) % Adding a single key to empty trie.
     ].
