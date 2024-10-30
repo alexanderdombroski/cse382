@@ -2,6 +2,7 @@
 
 -export([get/1, find_tree/1, build_traversal_list/1, find_using_traversal_list/1, update/1, replace_using_traversal_list/1, cons/2, merge/2]).
 
+-type random_access_list() :: list(parent_node() | leaf_node()).
 
 -type leaf_node() :: {1, integer(), nil, nil}.
 
