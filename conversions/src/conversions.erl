@@ -38,22 +38,25 @@
     ) -> list() | ral() | bst_node() | heap_node() | 
         rbt_node()  | trie_node() | ral_node().
 
-% structure_map(_, nil) -> % List
-%     nil;
-% structure_map(_, []) -> % List
-%     [];
-% structure_map(Fun, Trie) when is_map(Trie) -> % Trie
-%     Fun(ok); 
-% structure_map(Fun, [{C, V, L, R} | T]) -> % Ral
-%     [{C, Fun(V), structure_map(Fun, L), structure_map(Fun, R)} | structure_map(Fun, T)];
-% structure_map(Fun, [H | T]) -> % List
-%     [Fun(H) | structure_map(Fun, T)];
-% structure_map(Fun, {V, L, R}) -> % bst
-%     error;
-% structure_map(Fun, {C, V, L, R}) -> % rbt, heap, or ral_node
-%     error.
+structure_map(_, nil) -> % List
+    nil;
+structure_map(_, []) -> % List
+    [];
+structure_map(Fun, Trie) when is_map(Trie) -> % Trie
+    maps:fold(
+        fun(K, V, Acc) ->  
+        maps:put(Fun(K), structure_map(Fun, V), Acc)
+    end, #{}, Trie
+    ); 
+structure_map(Fun, [{C, V, L, R} | T]) -> % Ral
+    [{C, Fun(V), structure_map(Fun, L), structure_map(Fun, R)} | structure_map(Fun, T)];
+structure_map(Fun, [H | T]) -> % List
+    [Fun(H) | structure_map(Fun, T)];
+structure_map(Fun, {V, L, R}) -> % bst
+    {Fun(V), structure_map(Fun, L), structure_map(Fun, R)};
+structure_map(Fun, {C, V, L, R}) -> % rbt, heap, or ral_node
+    {C, Fun(V), structure_map(Fun, L), structure_map(Fun, R)}.
 
-structure_map(_, _) -> fail.
 
 
 
@@ -64,56 +67,74 @@ structure_map(_, _) -> fail.
 % Sample callback functions
 increment(X) -> X + 1.
 double(X) -> X * 2.
-add_prefix({Key, Value}) -> {Key, "prefix_" ++ Value}.
+
+capitalize(Str) when is_list(Str), Str =/= [] ->
+    [First | Rest] = Str,
+    string:to_upper([First]) ++ string:to_lower(Rest);
+capitalize([]) ->
+    [].
 
 % Test for list structure
 list_test_() ->
     [
-        ?_assertEqual([], structure_map(fun increment/1, []))
-        ?_assertEqual([2, 3, 4], structure_map(fun increment/1, [1, 2, 3])),
+        ?_assertEqual([], structure_map(fun increment/1, [])),
+        ?_assertEqual([2, 3, 4], structure_map(fun increment/1, [1, 2, 3]))
     ].
 
-% Test for empty list
-empty_list_test_() ->
-    [
-    ]
-
 % Test for random access list (RAL)
-ral_test() ->
+ral_test_() ->
     RAL = [{1, 2, [], []}, {2, 4, [{1, 2, [], []}], [{1, 3, [], []}]}],
     ExpectedRAL = [{1, 3, [], []}, {2, 5, [{1, 3, [], []}], [{1, 4, [], []}]}],
     [
-        ?_assertEqual(ExpectedRAL, structure_map(fun(X) -> X + 1 end, RAL)).
-    ]
+        ?_assertEqual(ExpectedRAL, structure_map(fun(X) -> X + 1 end, RAL))
+    ].
 % Test for BST
-bst_test() ->
+bst_test_() ->
     BST = {4, {2, nil, nil}, {6, nil, nil}},
-    ExpectedBST = {4, {3, nil, nil}, {6, nil, nil}},
+    ExpectedBST = {5, {3, nil, nil}, {7, nil, nil}},
     [
-        ?_assertEqual(ExpectedBST, structure_map(fun(X) -> X + 1 end, BST)).
-    ]
+        ?_assertEqual(ExpectedBST, structure_map(fun(X) -> X + 1 end, BST))
+    ].
 % Test for heap
-heap_test() ->
+heap_test_() ->
     Heap = {1, 10, nil, nil},
     ExpectedHeap = {1, 20, nil, nil},
     [
-    ?_assertEqual(ExpectedHeap, structure_map(fun double/1, Heap)),
-    ?_assertEqual({2, 3, {1, 8, nil, nil}, {1, 22, nil, nil}}, structure_map(fun increment/1, {2, 2, {1, 7, nil, nil}, {1, 21, nil, nil}}))
+        ?_assertEqual(ExpectedHeap, structure_map(fun double/1, Heap)),
+        ?_assertEqual({2, 3, {1, 8, nil, nil}, {1, 22, nil, nil}}, structure_map(fun increment/1, {2, 2, {1, 7, nil, nil}, {1, 21, nil, nil}}))
     ].
 
 % Test for red-black tree
-rbt_test() ->
-    RBT = {red, 3, {black, 2, nil, nil}, {black, 5, nil, nil}},
-    ExpectedRBT = {red, 4, {black, 3, nil, nil}, {black, 6, nil, nil}},
+rbt_test_() ->
+    RBT = {black, 3, {red, 2, nil, nil}, {red, 5, nil, nil}},
+    ExpectedRBT = {black, 4, {red, 3, nil, nil}, {red, 6, nil, nil}},
     [
-        ?_assertEqual(ExpectedRBT, structure_map(fun increment/1, RBT)).
-    ]
+        ?_assertEqual(ExpectedRBT, structure_map(fun increment/1, RBT))
+    ].
 % Test for trie
-trie_test() ->
-    Trie = #{"key1" => "value1", "key2" => "value2"},
-    ExpectedTrie = #{"key1" => "prefix_value1", "key2" => "prefix_value2"},
+trie_test_() ->
+    Trie = #{
+        "c" => #{
+            "a" => #{
+                "t"=> #{
+                    "End" => #{}, 
+                    "s" => #{"End" => #{}}
+                }
+            }
+        }
+    },
+    ExpectedTrie = #{
+        "C" => #{
+            "A" => #{
+                "T"=> #{
+                    "End" => #{}, 
+                    "S" => #{"End" => #{}}
+                }
+            }
+        }
+    },
     [
-        ?_assertEqual(ExpectedTrie, structure_map(fun add_prefix/1, Trie)).
-    ]
+        ?_assertEqual(ExpectedTrie, structure_map(fun capitalize/1, Trie))
+    ].
 
 -endif.
